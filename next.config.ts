@@ -1,6 +1,8 @@
 import type { NextConfig } from 'next';
 const config: NextConfig = {
   poweredByHeader: false,
+  // Only the public site origin is exposed; credentials remain server-only.
+  env: { NEXT_PUBLIC_APP_ORIGIN: process.env.APP_ORIGIN || '' },
   devIndicators: false,
   async headers() { return [{ source: '/:path*', headers: [
     { key: 'X-Content-Type-Options', value: 'nosniff' },

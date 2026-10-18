@@ -1,5 +1,15 @@
 import type { GalleryItem, GallerySettings } from './types';
 
+export function makerUrl() {
+  const configured = process.env.NEXT_PUBLIC_APP_ORIGIN;
+  const fallback = typeof window !== 'undefined' ? window.location.origin : 'http://127.0.0.1:5173';
+  try {
+    const url = new URL(configured || fallback);
+    if (url.protocol === 'https:' || url.protocol === 'http:') return `${url.origin}/`;
+  } catch { /* Fall back to the editor origin if configuration is invalid. */ }
+  return `${fallback}/`;
+}
+
 export const fontCSS = `@font-face{font-family:'DM Sans';font-style:normal;font-weight:100 1000;font-display:swap;src:url('./fonts/dm-sans.woff2') format('woff2')}@font-face{font-family:'Lora';font-style:normal;font-weight:400 700;font-display:swap;src:url('./fonts/lora.woff2') format('woff2')}@font-face{font-family:'Lora';font-style:italic;font-weight:400 700;font-display:swap;src:url('./fonts/lora-italic.woff2') format('woff2')}`;
 
 export const galleryCSS = `
@@ -15,8 +25,12 @@ export const galleryCSS = `
 .gallery-open:hover { transform:translateY(-3px) rotate(-1deg); }
 .gallery-open:focus-visible { outline:3px solid #a75c70; outline-offset:4px; }
 .gallery-card figcaption { margin:9px 3px 0; font-size:10px; line-height:1.55; text-align:center; overflow-wrap:anywhere; }
-.gallery-footer { display:flex; align-items:center; justify-content:center; gap:7px; margin:34px 0 0; font-size:10px; opacity:.5; }
-.gallery-footer span { font-size:13px; }
+.gallery-footer { display:flex; align-items:center; justify-content:center; margin:34px 0 0; font-size:14px; }
+.gallery-credit { display:inline-flex; align-items:center; justify-content:center; gap:8px; min-height:44px; padding:6px 12px; color:inherit; text-decoration:none; opacity:.8; border-radius:8px; transition:opacity .2s; }
+.gallery-credit strong { font-weight:600; }
+.gallery-credit:hover { opacity:1; text-decoration:underline; text-underline-offset:4px; }
+.gallery-credit:focus-visible { outline:2px solid currentColor; outline-offset:3px; opacity:1; }
+.gallery-footer span { font-size:17px; }
 .gallery.collage .gallery-grid { grid-template-columns:repeat(3,minmax(0,1fr)); align-items:start; }
 .gallery.collage .gallery-card:nth-child(3n+2) { margin-top:25px; }
 .gallery.collage .gallery-card:nth-child(3n+1) .gallery-image { aspect-ratio: .88; }
@@ -79,5 +93,5 @@ export function galleryHTML(items: GalleryItem[], settings: GallerySettings, pat
   const cards = items.map((item, i) => `<figure class="gallery-card"><button class="gallery-open" data-index="${i}" aria-label="Open ${escapeHTML(item.caption || item.name)}"><img class="gallery-image" src="${escapeHTML(paths[i])}" alt="${escapeHTML(item.caption || item.name)}" loading="lazy"/></button>${settings.captions && item.caption ? `<figcaption>${escapeHTML(item.caption)}</figcaption>` : ''}</figure>`).join('');
   const background = /^#[a-f\d]{6}$/i.test(settings.background) ? settings.background : '#f6efdf';
   const template = ['grid', 'collage', 'scrapbook'].includes(settings.template) ? settings.template : 'grid';
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><meta name="description" content="${escapeHTML(settings.description)}"/><title>${safeTitle}</title><style>*{box-sizing:border-box}body{margin:0;background:${background};font-family:'DM Sans',sans-serif}.gallery{max-width:1000px;margin:0 auto;padding-top:65px}button{font:inherit}${fontCSS}${galleryCSS}dialog{border:0;border-radius:16px;padding:16px;background:#fffaf3;max-width:90vw;color:#51443e}dialog::backdrop{background:#302725bb}dialog img{display:block;max-height:75vh;max-width:100%;margin:auto;object-fit:contain}dialog p{text-align:center;font-size:14px}dialog button{display:block;margin:0 0 12px auto;border:1px solid #ded4ca;border-radius:20px;background:white;padding:7px 16px;cursor:pointer}</style></head><body><main class="gallery ${template}"><header class="gallery-heading"><h2>${safeTitle}</h2>${settings.description ? `<p>${escapeHTML(settings.description)}</p>` : ''}</header><div class="gallery-grid">${cards}</div><footer class="gallery-footer"><span>♡</span> made with gif & giggles</footer></main><dialog aria-label="Image viewer"><button aria-label="Close image viewer">Close ×</button><img alt=""/><p></p></dialog><script>const viewer=document.querySelector('dialog');let previous;document.querySelectorAll('.gallery-open').forEach(button=>button.addEventListener('click',()=>{previous=button;const image=button.querySelector('img');viewer.querySelector('img').src=image.src;viewer.querySelector('img').alt=image.alt;viewer.querySelector('p').textContent=image.alt;viewer.showModal()}));viewer.querySelector('button').addEventListener('click',()=>viewer.close());viewer.addEventListener('click',event=>{if(event.target===viewer){const r=viewer.getBoundingClientRect();if(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom)viewer.close()}});viewer.addEventListener('close',()=>previous?.focus());</script></body></html>`;
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><meta name="description" content="${escapeHTML(settings.description)}"/><title>${safeTitle}</title><style>*{box-sizing:border-box}body{margin:0;background:${background};font-family:'DM Sans',sans-serif}.gallery{max-width:1000px;margin:0 auto;padding-top:65px}button{font:inherit}${fontCSS}${galleryCSS}dialog{border:0;border-radius:16px;padding:16px;background:#fffaf3;max-width:90vw;color:#51443e}dialog::backdrop{background:#302725bb}dialog img{display:block;max-height:75vh;max-width:100%;margin:auto;object-fit:contain}dialog p{text-align:center;font-size:14px}dialog button{display:block;margin:0 0 12px auto;border:1px solid #ded4ca;border-radius:20px;background:white;padding:7px 16px;cursor:pointer}</style></head><body><main class="gallery ${template}"><header class="gallery-heading"><h2>${safeTitle}</h2>${settings.description ? `<p>${escapeHTML(settings.description)}</p>` : ''}</header><div class="gallery-grid">${cards}</div><footer class="gallery-footer"><a class="gallery-credit" href="${escapeHTML(makerUrl())}" target="_blank" rel="noopener noreferrer"><span aria-hidden="true">♡</span> made with <strong>gif &amp; giggles</strong></a></footer></main><dialog aria-label="Image viewer"><button aria-label="Close image viewer">Close ×</button><img alt=""/><p></p></dialog><script>const viewer=document.querySelector('dialog');let previous;document.querySelectorAll('.gallery-open').forEach(button=>button.addEventListener('click',()=>{previous=button;const image=button.querySelector('img');viewer.querySelector('img').src=image.src;viewer.querySelector('img').alt=image.alt;viewer.querySelector('p').textContent=image.alt;viewer.showModal()}));viewer.querySelector('button').addEventListener('click',()=>viewer.close());viewer.addEventListener('click',event=>{if(event.target===viewer){const r=viewer.getBoundingClientRect();if(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom)viewer.close()}});viewer.addEventListener('close',()=>previous?.focus());</script></body></html>`;
 }

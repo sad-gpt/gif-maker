@@ -8,7 +8,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { DEFAULT_SETTINGS, MAX_FILES, MAX_FILE_BYTES, MAX_TOTAL_BYTES } from './types';
 import type { GalleryItem, GallerySettings, Template } from './types';
 import { DEMO_DESCRIPTION, DEMO_TITLE, makeDemoItems } from './demo';
-import { createGalleryZip, galleryCSS } from './gallery';
+import { createGalleryZip, galleryCSS, makerUrl } from './gallery';
 import { clipboardFiles, filesFromDrop, normalizeClipboardImages, prepareUploads } from './uploads';
 import PublishPanel from './PublishPanel';
 import { readLocal, saveDraft } from './draft';
@@ -43,7 +43,7 @@ function Gallery({ items, settings, phone = false, onOpen, onEditCaption }: { it
   return <div className={`gallery ${settings.template}${phone ? ' phone' : ''}`} style={{ background: settings.background }}>
     <div className="gallery-heading"><h2>{settings.title.trim() || 'the group chat hall of fame'}</h2>{settings.description && <p>{settings.description}</p>}</div>
     <div className="gallery-grid">{items.map((item, i) => <figure className="gallery-card" key={item.id}><button className="gallery-open" onClick={() => onOpen(i)} aria-label={`Open ${item.caption || item.name}`}><img className="gallery-image" src={item.url} alt={item.caption || item.name} loading="lazy"/></button>{settings.captions && item.caption && <figcaption>{item.caption}</figcaption>}{onEditCaption && <button className="caption-edit-button" onClick={() => onEditCaption(item.id)} aria-label={`${item.caption ? 'Edit' : 'Add'} caption for ${item.name}`}><Pencil size={11}/>{item.caption ? 'Edit caption' : 'Add caption'}</button>}</figure>)}</div>
-    <div className="gallery-footer"><Heart size={11}/> made with gif & giggles</div>
+    <div className="gallery-footer"><a className="gallery-credit" href={makerUrl()} target="_blank" rel="noopener noreferrer"><Heart size={16} aria-hidden="true"/> made with <strong>gif &amp; giggles</strong></a></div>
   </div>;
 }
 
