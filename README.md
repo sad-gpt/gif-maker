@@ -14,7 +14,7 @@ Turn photos, GIFs, and stickers into a cute, shareable webpage in a few clicks. 
 - Preview your gallery on desktop or phone before sharing.
 - Come back to your saved draft, or start a fresh gallery for another occasion.
 
-Supports GIF, WebP, PNG, and JPG. Add up to 60 images, with a limit of 20 MB per image and 150 MB per gallery.
+Supports GIF, WebP, PNG, JPEG/JFIF, AVIF and BMP. HEIC/HEIF photos must be exported as JPEG or PNG first. Add up to 60 images, with a limit of 20 MB per image and 150 MB per gallery.
 
 ## How to use
 

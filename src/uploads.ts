@@ -11,14 +11,16 @@ export async function normalizeClipboardImages(files: File[]): Promise<File[]> {
   const images: File[] = [];
   for (const file of files) {
     if (file.size > MAX_FILE_BYTES) { images.push(file); continue; }
-    const bytes = new Uint8Array(await file.slice(0, 16).arrayBuffer());
+    const bytes = new Uint8Array(await file.slice(0, 64).arrayBuffer());
     const text = new TextDecoder().decode(bytes);
     const extension = text.startsWith('RIFF') && text.slice(8, 12) === 'WEBP' ? 'webp'
       : /^GIF8[79]a/.test(text) ? 'gif'
       : bytes[0] === 137 && bytes[1] === 80 && bytes[2] === 78 && bytes[3] === 71 ? 'png'
-      : bytes[0] === 255 && bytes[1] === 216 && bytes[2] === 255 ? 'jpg' : undefined;
+      : bytes[0] === 255 && bytes[1] === 216 && bytes[2] === 255 ? 'jpg'
+      : text.startsWith('BM') ? 'bmp'
+      : text.slice(4, 8) === 'ftyp' && /avif|avis/.test(text.slice(8)) ? 'avif' : undefined;
     if (!extension) { images.push(file); continue; }
-    const name = file.name.replace(/\.(gif|webp|png|jpe?g)$/i, '') || `pasted-sticker-${images.length + 1}`;
+    const name = file.name.replace(/\.(gif|webp|png|jpe?g|jfif|avif|bmp)$/i, '') || `pasted-sticker-${images.length + 1}`;
     images.push(new File([file], `${name}.${extension}`, { type: extension === 'jpg' ? 'image/jpeg' : `image/${extension}` }));
   }
   return images;
@@ -27,9 +29,21 @@ export async function normalizeClipboardImages(files: File[]): Promise<File[]> {
 export async function prepareUploads(files: File[], existing: GalleryItem[]) {
   const added: GalleryItem[] = [];
   let skipped = 0;
+  const rejected: { name: string; reason: string }[] = [];
+  const reject = (file: File, reason: string) => { skipped++; rejected.push({ name: file.name, reason }); };
   let total = existing.reduce((sum, item) => sum + item.blob.size, 0);
-  for (const file of files) {
-    if (!IMAGE_TYPES.test(file.name) || file.size > MAX_FILE_BYTES || total + file.size > MAX_TOTAL_BYTES || existing.length + added.length >= MAX_FILES) { skipped++; continue; }
+  for (let file of files) {
+    if (file.size > MAX_FILE_BYTES) { reject(file, 'over the 20 MB per-image limit'); continue; }
+    if (existing.length + added.length >= MAX_FILES) { reject(file, 'gallery already has 60 images'); continue; }
+    if (total + file.size > MAX_TOTAL_BYTES) { reject(file, 'would exceed the 150 MB gallery limit'); continue; }
+    const [normalised] = await normalizeClipboardImages([file]);
+    file = normalised;
+    if (!IMAGE_TYPES.test(file.name)) {
+      reject(file, /\.(heic|heif)$/i.test(file.name) || /image\/hei[cf]/i.test(file.type)
+        ? 'HEIC/HEIF is not supported yet. Export this photo as JPEG or PNG'
+        : 'unsupported format. Use JPEG, PNG, GIF, WebP, AVIF or BMP');
+      continue;
+    }
     const url = URL.createObjectURL(file);
     try {
       await new Promise<void>((resolve, reject) => {
@@ -40,9 +54,9 @@ export async function prepareUploads(files: File[], existing: GalleryItem[]) {
       });
       added.push({ id: crypto.randomUUID(), name: file.name, caption: '', url, blob: file, extension: file.name.split('.').pop()!.toLowerCase() });
       total += file.size;
-    } catch { URL.revokeObjectURL(url); skipped++; }
+    } catch { URL.revokeObjectURL(url); reject(file, 'could not be read by this browser. Try exporting it as JPEG or PNG'); }
   }
-  return { added, skipped };
+  return { added, skipped, rejected };
 }
 
 type Entry = { isFile: boolean; isDirectory: boolean; file: (success: (file: File) => void, error: (error: unknown) => void) => void; createReader: () => { readEntries: (success: (entries: Entry[]) => void, error: (error: unknown) => void) => void } };

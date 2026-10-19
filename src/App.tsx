@@ -67,6 +67,7 @@ export default function App() {
   const [exporting, setExporting] = useState(false);
   const [resetting, setResetting] = useState(false);
   const [notice, setNotice] = useState('');
+  const [uploadIssues, setUploadIssues] = useState<{ name: string; reason: string }[]>([]);
   const [modal, setModal] = useState<'help' | 'publish' | 'preview' | 'new' | null>(null);
   const [lightbox, setLightbox] = useState<number | null>(null);
   const [editingCaption, setEditingCaption] = useState<string | null>(null);
@@ -133,6 +134,7 @@ export default function App() {
       objectUrls.current.forEach(url => URL.revokeObjectURL(url));
       objectUrls.current.clear();
       setItems([]);
+      setUploadIssues([]);
       setSettings({ ...DEFAULT_SETTINGS });
       setPublication(undefined);
       setLightbox(null);
@@ -165,9 +167,10 @@ export default function App() {
     setUploading(true);
     try {
       const result = await prepareUploads(fromClipboard ? await normalizeClipboardImages(files) : files, itemsRef.current);
+      setUploadIssues(result.rejected);
       result.added.forEach(item => objectUrls.current.add(item.url));
       setItems(current => [...current, ...result.added]);
-      setNotice(result.skipped ? `${result.added.length} added; ${result.skipped} skipped. Use valid GIF, WebP, PNG or JPG files up to ${MAX_FILE_BYTES / 1024 / 1024} MB each (${MAX_FILES} files / ${MAX_TOTAL_BYTES / 1024 / 1024} MB total).` : result.added.length ? `${result.added.length} ${result.added.length === 1 ? 'moment' : 'moments'} added to your gallery.` : 'No supported images found. Try another folder.');
+      setNotice(result.skipped ? `${result.added.length} added; ${result.skipped} skipped. Use GIF, WebP, PNG, JPEG, AVIF or BMP files up to ${MAX_FILE_BYTES / 1024 / 1024} MB each (${MAX_FILES} files / ${MAX_TOTAL_BYTES / 1024 / 1024} MB total).` : result.added.length ? `${result.added.length} ${result.added.length === 1 ? 'moment' : 'moments'} added to your gallery.` : 'No supported images found. Try another folder.');
     } catch { setNotice('Those files could not be read. Try selecting the images directly.'); }
     finally { setUploading(false); uploadLock.current = false; }
   }
@@ -222,10 +225,12 @@ export default function App() {
                 <button className="primary small" disabled={uploading} onClick={() => fileInput.current?.click()}><Plus size={15}/> Choose files</button>
                 <button className="folder-button" disabled={uploading} onClick={() => folderInput.current?.click()}><FolderPlus size={13}/> or choose a whole folder</button>
                 <p className="paste-hint">Or copy an image and press <kbd>Ctrl+V</kbd> / <kbd>⌘V</kbd></p>
-                <input ref={fileInput} type="file" accept=".gif,.webp,.png,.jpg,.jpeg" multiple hidden onChange={e => { void upload(Array.from(e.target.files || [])); e.target.value = ''; }}/>
+                <input ref={fileInput} type="file" accept=".gif,.webp,.png,.jpg,.jpeg,.jfif,.avif,.bmp" multiple hidden onChange={e => { void upload(Array.from(e.target.files || [])); e.target.value = ''; }}/>
                 <input ref={node => { folderInput.current = node; node?.setAttribute('webkitdirectory', ''); }} type="file" multiple hidden onChange={e => { void upload(Array.from(e.target.files || [])); e.target.value = ''; }}/>
               </div>
               <p className="upload-limits">Up to {MAX_FILES} images · {MAX_FILE_BYTES / 1024 / 1024} MB each · {MAX_TOTAL_BYTES / 1024 / 1024} MB total</p>
+              {uploadIssues.length > 0 && <div className="upload-issues" role="status"><div><strong>{uploadIssues.length} {uploadIssues.length === 1 ? 'image wasn’t added' : 'images weren’t added'}</strong><button className="icon-button" aria-label="Dismiss upload details" onClick={() => setUploadIssues([])}><X size={14}/></button></div><ul>{uploadIssues.map((issue, i) => <li key={i}><strong>{issue.name}</strong><span>{issue.reason}</span></li>)}</ul></div>}
+
 
             </div></details>
             <details className="editor-step" open>
@@ -271,7 +276,7 @@ export default function App() {
     <footer className="creator-footer"><a href="https://github.com/sad-gpt" target="_blank" rel="noopener noreferrer">Made with <Heart size={14} aria-label="love"/> by <strong>@sad-gpt</strong></a></footer>
     {notice && <div className="toast" role="status"><Info size={17}/><span>{notice}</span><button aria-label="Dismiss message" onClick={() => setNotice('')}><X size={15}/></button></div>}
     {modal === 'new' && <Modal title="Start a new gallery" onClose={() => { if (!resetting) setModal(null); }}><h2>A fresh little collection?</h2><p className="modal-description">This clears the photos, captions, and settings saved in this browser, including unfinished publishing progress. Download your current gallery first if you want to keep a copy.</p><p className="modal-description">Your published websites stay online and unchanged.</p><div className="caption-actions"><button className="secondary" autoFocus disabled={resetting} onClick={() => setModal(null)}>Keep editing</button><button className="primary" disabled={resetting || draftState === 'saving'} onClick={() => void startNewGallery()}>{resetting ? 'Starting…' : 'Start new gallery'}</button></div></Modal>}
-    {modal === 'help' && <Modal title="How it works" onClose={() => setModal(null)}><Bow className="modal-bow"/><span className="section-kicker">FROM YOUR CAMERA ROLL, WITH LOVE</span><h2>Make a little website for your memories.</h2><ol className="help-steps"><li><span>01</span><div><h3>Add your favourites</h3><p>Choose GIFs, WebP stickers, PNGs or JPGs. Add a whole folder, or a few at a time. Up to 60 images, 20 MB each and 150 MB total.</p></div></li><li><span>02</span><div><h3>Make it yours</h3><p>Name your gallery, add captions, rearrange your images, and choose a layout and background.</p></div></li><li><span>03</span><div><h3>Share your gallery</h3><p>Choose Publish with GitHub to connect your account and publish from here. Or download your website ZIP, unzip it and drop the folder into Netlify Drop. Netlify may ask you to sign in and make the site public.</p></div></li></ol><div className="help-note">Your draft saves on this device. GitHub publishing creates a public repository and page in your account; it can take up to 10 minutes. ZIP export includes everything for offline viewing or Netlify.</div><button className="primary full" onClick={() => setModal(null)}>Start creating <ArrowRight size={16}/></button></Modal>}
+    {modal === 'help' && <Modal title="How it works" onClose={() => setModal(null)}><Bow className="modal-bow"/><span className="section-kicker">FROM YOUR CAMERA ROLL, WITH LOVE</span><h2>Make a little website for your memories.</h2><ol className="help-steps"><li><span>01</span><div><h3>Add your favourites</h3><p>Choose GIFs, WebP stickers, PNG, JPEG, AVIF or BMP images. Export HEIC photos as JPEG first. Add a whole folder, or a few at a time. Up to 60 images, 20 MB each and 150 MB total.</p></div></li><li><span>02</span><div><h3>Make it yours</h3><p>Name your gallery, add captions, rearrange your images, and choose a layout and background.</p></div></li><li><span>03</span><div><h3>Share your gallery</h3><p>Choose Publish with GitHub to connect your account and publish from here. Or download your website ZIP, unzip it and drop the folder into Netlify Drop. Netlify may ask you to sign in and make the site public.</p></div></li></ol><div className="help-note">Your draft saves on this device. GitHub publishing creates a public repository and page in your account; it can take up to 10 minutes. ZIP export includes everything for offline viewing or Netlify.</div><button className="primary full" onClick={() => setModal(null)}>Start creating <ArrowRight size={16}/></button></Modal>}
     {modal === 'publish' && <Modal title="Publish your gallery" className="publish-modal" onClose={() => setModal(null)}><PublishPanel items={items} settings={settings} publication={publication} onPublished={setPublication} onLoad={(loaded, nextSettings, nextPublication) => { objectUrls.current.forEach(url => URL.revokeObjectURL(url)); objectUrls.current.clear(); loaded.forEach(item => objectUrls.current.add(item.url)); setItems(loaded); setSettings(nextSettings); setPublication(nextPublication); setModal(null); setNotice('Your published gallery is open and ready to edit.'); }} onDownload={download} exporting={exporting}/></Modal>}
     {modal === 'preview' && <Modal title="Full gallery preview" className="preview-modal" onClose={() => setModal(null)}><Gallery items={shownItems} settings={shownSettings} onOpen={setLightbox}/></Modal>}
     {activeImage && <Modal title="Image viewer" className="lightbox" onClose={() => setLightbox(null)}><img src={activeImage.url} alt={activeImage.caption || activeImage.name}/><div className="lightbox-bottom"><button className="icon-button" aria-label="Previous image" onClick={() => setLightbox(current => (current! - 1 + shownItems.length) % shownItems.length)}><ArrowLeft size={20}/></button><div><p>{activeImage.caption || activeImage.name}</p><span>{lightbox! + 1} / {shownItems.length}</span></div><button className="icon-button" aria-label="Next image" onClick={() => setLightbox(current => (current! + 1) % shownItems.length)}><ArrowRight size={20}/></button></div></Modal>}

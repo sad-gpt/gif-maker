@@ -5,4 +5,4 @@ export const DEFAULT_SETTINGS: GallerySettings = { title: '', description: '', t
 export const MAX_FILES = 60;
 export const MAX_FILE_BYTES = 20 * 1024 * 1024;
 export const MAX_TOTAL_BYTES = 150 * 1024 * 1024;
-export const IMAGE_TYPES = /\.(gif|webp|png|jpe?g)$/i;
+export const IMAGE_TYPES = /\.(gif|webp|png|jpe?g|jfif|avif|bmp)$/i;
