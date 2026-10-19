@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
-import { ArrowDownToLine, ArrowLeft, ArrowRight, Check, FolderPlus, GripVertical, Heart, Info, Maximize2, Monitor, Pencil, Plus, Smartphone, X } from 'lucide-react';
+import { ArrowDownToLine, ArrowLeft, ArrowRight, Check, ChevronLeft, ChevronRight, FolderPlus, GripVertical, Heart, Info, Maximize2, Monitor, Pencil, Plus, Smartphone, X } from 'lucide-react';
 import { closestCenter, DndContext, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -61,6 +61,7 @@ export default function App() {
   const [items, setItems] = useState<GalleryItem[]>([]);
   const [settings, setSettings] = useState<GallerySettings>(DEFAULT_SETTINGS);
   const [phone, setPhone] = useState(false);
+  const [collectionOpen, setCollectionOpen] = useState(true);
   const [dragOver, setDragOver] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [exporting, setExporting] = useState(false);
@@ -208,38 +209,38 @@ export default function App() {
     <header className="site-header"><a className="brand" href="#" aria-label="GIF & Giggles home"><Bow/><span>gif <span className="brand-amp">&</span> giggles<span className="brand-dot">.</span></span></a><div className="header-right"><button className="help-button" onClick={() => setModal('help')}>How it works</button></div></header>
     <main>
       <section className="intro"><h1>Your favourite moments.<br/><em>Their own little website.</em><svg className="title-spark" viewBox="0 0 50 55" aria-hidden="true"><path d="m11 21 12 5m1-17 3 13m16-7-9 11" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"/></svg></h1><p>Photos, GIFs, and stickers for couples, friends, and family.<br/>Turn your favourites into a hosted website in just a few clicks.</p></section>
-      <section className="workspace" aria-label="Gallery editor">
+      <section className={`workspace collection-workspace ${collectionOpen ? 'collection-expanded' : 'collection-collapsed'}`} aria-label="Gallery editor">
         <aside className="editor-panel">
           <div className="editor-body editor-steps">
             <button className="new-gallery-button" disabled={uploading || exporting || resetting || draftState === 'saving'} onClick={() => setModal('new')}><Plus size={15}/> Start a new gallery</button>
-            <section className="editor-step" aria-labelledby="upload-step">
-              <div className="step-heading"><span>01</span><h2 id="upload-step">Add your photos & GIFs</h2></div>
+            <details className="editor-step" open>
+              <summary className="step-heading"><span>01</span><h2 id="upload-step">Add your photos & GIFs</h2><ChevronRight className="step-chevron" size={17}/></summary><div className="step-content">
               <p className="step-description">Add one at a time, a few together, or a whole folder.</p>
               <div className={`dropzone ${dragOver ? 'over' : ''} ${uploading ? 'busy' : ''}`} onDragOver={e => { e.preventDefault(); if (!uploading) setDragOver(true); }} onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setDragOver(false); }} onDrop={async e => { e.preventDefault(); setDragOver(false); if (uploadLock.current) return; const transfer = e.dataTransfer; try { await upload(await filesFromDrop(transfer)); } catch { setNotice('That folder could not be read. Use the folder button below instead.'); } }}>
                 <div className="upload-illustration" aria-hidden="true"><div className="mini-photo back"/><div className="mini-photo front"><span>•ᴗ•</span><Heart size={12}/></div><span className="upload-spark">✧</span></div>
                 <strong>{uploading ? 'Adding your memories…' : dragOver ? 'Drop them here!' : 'Drop your favourite moments'}</strong><span className="drop-hint">Photos, GIFs & stickers</span>
                 <button className="primary small" disabled={uploading} onClick={() => fileInput.current?.click()}><Plus size={15}/> Choose files</button>
                 <button className="folder-button" disabled={uploading} onClick={() => folderInput.current?.click()}><FolderPlus size={13}/> or choose a whole folder</button>
-                <button className="folder-button" type="button" onClick={event => { event.currentTarget.focus(); setNotice('Copy a sticker image, then press Ctrl+V here (⌘V on Mac).'); }}>or copy a sticker & press Ctrl+V / ⌘V</button>
+                <p className="paste-hint">Or copy an image and press <kbd>Ctrl+V</kbd> / <kbd>⌘V</kbd></p>
                 <input ref={fileInput} type="file" accept=".gif,.webp,.png,.jpg,.jpeg" multiple hidden onChange={e => { void upload(Array.from(e.target.files || [])); e.target.value = ''; }}/>
                 <input ref={node => { folderInput.current = node; node?.setAttribute('webkitdirectory', ''); }} type="file" multiple hidden onChange={e => { void upload(Array.from(e.target.files || [])); e.target.value = ''; }}/>
               </div>
               <p className="upload-limits">Up to {MAX_FILES} images · {MAX_FILE_BYTES / 1024 / 1024} MB each · {MAX_TOTAL_BYTES / 1024 / 1024} MB total</p>
-              {items.length ? <div className="your-items"><div className="field-heading"><label>Your collection <span className="count">{items.length}/{MAX_FILES}</span></label><span>drag to rearrange</span></div><p className="caption-hint">Edit a caption below, or tap the pencil on any image.</p><DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={({ active, over }) => { if (over && active.id !== over.id) setItems(current => arrayMove(current, current.findIndex(i => i.id === active.id), current.findIndex(i => i.id === over.id))); }}><SortableContext items={items.map(item => item.id)} strategy={verticalListSortingStrategy}><div className="item-list">{items.map((item, index) => <SortableItem key={item.id} item={item} index={index} onCaption={caption => setItems(current => current.map(i => i.id === item.id ? { ...i, caption } : i))} onRemove={() => remove(item.id)}/>)}</div></SortableContext></DndContext></div> : null}
-            </section>
-            <section className="editor-step" aria-labelledby="details-step">
-              <div className="step-heading"><span>02</span><h2 id="details-step">Name your gallery</h2></div>
+
+            </div></details>
+            <details className="editor-step" open>
+              <summary className="step-heading"><span>02</span><h2 id="details-step">Name your gallery</h2><ChevronRight className="step-chevron" size={17}/></summary><div className="step-content">
               <div className="field-group"><label htmlFor="gallery-title">Gallery name</label><input id="gallery-title" placeholder="e.g. Our weekend away" maxLength={80} value={settings.title} onChange={e => update('title', e.target.value)}/></div>
               <div className="field-group"><label htmlFor="gallery-description">Description <span>optional</span></label><textarea id="gallery-description" rows={2} placeholder="A few favourite moments, all in one place." maxLength={180} value={settings.description} onChange={e => update('description', e.target.value)}/></div>
-            </section>
-            <section className="editor-step" aria-labelledby="layout-step">
-              <div className="step-heading"><span>03</span><h2 id="layout-step">Change layout</h2></div>
+            </div></details>
+            <details className="editor-step" open>
+              <summary className="step-heading"><span>03</span><h2 id="layout-step">Change layout</h2><ChevronRight className="step-chevron" size={17}/></summary><div className="step-content">
               <p className="step-description">Pick a look. You can change it anytime.</p>
               <label className="standalone-label">Choose your gallery layout</label>
               <div className="template-options">{templates.map(template => <button key={template.id} className={`template-option ${settings.template === template.id ? 'selected' : ''}`} aria-pressed={settings.template === template.id} onClick={() => update('template', template.id)}><span className={`template-thumb ${template.id}`} aria-hidden="true">{[0,1,2,3,4,5].map(n => <i key={n}/>)}</span><span>{template.name}</span>{settings.template === template.id && <Check size={13} className="template-check"/>}</button>)}</div>
               <div className="field-group palette-group"><label>Choose a background <span>{colors.find(c => c.value === settings.background)?.name}</span></label><div className="palette">{colors.map(color => <button key={color.value} className={`swatch ${settings.background === color.value ? 'selected' : ''}`} style={{ background: color.value }} aria-label={`${color.name} background`} aria-pressed={settings.background === color.value} onClick={() => update('background', color.value)}>{settings.background === color.value && <Check size={15}/>}</button>)}</div></div>
               <div className="toggle-row"><div><label htmlFor="captions">Show captions</label><p>A little story for each moment</p></div><button id="captions" className={`toggle ${settings.captions ? 'on' : ''}`} role="switch" aria-checked={settings.captions} aria-label="Show captions" onClick={() => update('captions', !settings.captions)}><span/></button></div>
-            </section>
+            </div></details>
           </div>
           <section className="local-note" aria-label="Draft and image storage">
             <div className="draft-status"><Heart size={14} aria-hidden="true"/><span role="status">{draftState === 'saving' ? 'Saving your draft…' : draftState === 'saved' ? 'Draft saved on this device' : 'Draft not saved. Download a backup.'}</span></div>
@@ -258,6 +259,13 @@ export default function App() {
           <div className={`preview-stage ${phone ? 'phone-stage' : ''}`}><div className={`preview-window ${phone ? 'phone-window' : ''}`}><div className="browser-bar"><div className="browser-dots"><i/><i/><i/></div><span>{isDemo ? 'sample gallery · your moments go here' : 'your gallery · made to share'}</span><Heart size={10}/></div><Gallery items={shownItems} settings={shownSettings} phone={phone} onOpen={setLightbox} onEditCaption={editCaption} onRemove={removeFromPreview}/></div>{isDemo && <span className="demo-label">a little preview. add your own moments. <span aria-hidden="true">↖</span></span>}</div>
           <div className="export-bar"><div><span className="export-flower" aria-hidden="true">✳</span><div><strong>Ready to share?</strong><span>Publish with GitHub or download for Netlify.</span></div></div><button className="primary download" onClick={() => setModal('publish')} disabled={exporting || uploading}><ArrowDownToLine size={16}/>Publish gallery</button></div>
         </div>
+        <aside className="collection-panel" aria-label="Your collection">
+          <button className="collection-toggle" aria-expanded={collectionOpen} aria-controls="collection-content" aria-label={collectionOpen ? 'Collapse your collection' : 'Expand your collection'} onClick={() => setCollectionOpen(open => !open)}>{collectionOpen ? <ChevronRight size={16}/> : <ChevronLeft size={16}/>}<span>Your collection</span><span className="count">{items.length}/{MAX_FILES}</span></button>
+          <div id="collection-content" hidden={!collectionOpen}>
+            <p className="collection-hint">Drag to rearrange. Edit captions below.</p>
+            {items.length ? <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={({ active, over }) => { if (over && active.id !== over.id) setItems(current => arrayMove(current, current.findIndex(i => i.id === active.id), current.findIndex(i => i.id === over.id))); }}><SortableContext items={items.map(item => item.id)} strategy={verticalListSortingStrategy}><div className="item-list">{items.map((item, index) => <SortableItem key={item.id} item={item} index={index} onCaption={caption => setItems(current => current.map(i => i.id === item.id ? { ...i, caption } : i))} onRemove={() => remove(item.id)}/>)}</div></SortableContext></DndContext> : <p className="collection-empty">Add photos or GIFs to see your collection here.</p>}
+          </div>
+        </aside>
       </section>
     </main>
     <footer className="creator-footer"><a href="https://github.com/sad-gpt" target="_blank" rel="noopener noreferrer">Made with <Heart size={14} aria-label="love"/> by <strong>@sad-gpt</strong></a></footer>
