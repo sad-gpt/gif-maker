@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import '../styles.css';
-export const metadata: Metadata = { title: 'gif & giggles — a GIF gallery maker for your group chat', description: 'Turn your friends’ funniest GIFs into a cute website. Add captions, pick a layout, and publish with GitHub or download for Netlify.' };
+export const metadata: Metadata = { title: 'gif & giggles | A little website for your memories', description: 'Turn photos, GIFs, and stickers into a shareable website for couple memories, friends, and family trips. Add captions, choose a layout, and share.' };
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return <html lang="en"><body>{children}</body></html>;
 }

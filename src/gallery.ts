@@ -68,7 +68,7 @@ export async function createGalleryFiles(items: GalleryItem[], settings: Gallery
   const manifest: GalleryManifest = { format: 'gif-and-giggles', version: 1, settings, items: items.map((item, i) => ({ id: item.id, name: item.name, caption: item.caption, path: paths[i], extension: item.extension })) };
   const files: GalleryFile[] = items.map((item, i) => ({ path: paths[i], blob: item.blob }));
   files.push({ path: 'index.html', blob: new Blob([galleryHTML(items, settings, paths)], { type: 'text/html' }) }, { path: 'gallery.json', blob: new Blob([JSON.stringify(manifest, null, 2)], { type: 'application/json' }) }, { path: '.nojekyll', blob: new Blob([]) });
-  files.push({ path: 'START-HERE.txt', blob: new Blob(['Your GIF gallery is ready. The lore lives on!\n\n1. Unzip this folder.\n2. Open index.html to enjoy your gallery offline. Keep images/ and fonts/ beside it.\n3. For a public link, visit https://app.netlify.com/drop and drop the unzipped folder. Follow Netlify’s account and public visibility steps.\n4. You can also use Publish with GitHub in gif & giggles.\n\nYour GIFs, captions, design and fonts are included. Your editor draft saves on your device.\n']) });
+  files.push({ path: 'START-HERE.txt', blob: new Blob(['Your gallery is ready to share!\n\n1. Unzip this folder.\n2. Open index.html to enjoy your gallery offline. Keep images/ and fonts/ beside it.\n3. For a public link, visit https://app.netlify.com/drop and drop the unzipped folder. Follow Netlify’s account and public visibility steps.\n4. You can also use Publish with GitHub in gif & giggles.\n\nYour images, captions, design and fonts are included. Your editor draft saves on your device.\n']) });
   files.push(...await Promise.all(assetNames.map(async name => ({ path: `fonts/${name}`, blob: await loadAsset(name) }))));
   return { manifest, files };
 }
@@ -89,7 +89,7 @@ export async function createGalleryZip(items: GalleryItem[], settings: GallerySe
 }
 
 export function galleryHTML(items: GalleryItem[], settings: GallerySettings, paths: string[]) {
-  const safeTitle = escapeHTML(settings.title.trim() || 'the group chat hall of fame');
+  const safeTitle = escapeHTML(settings.title.trim() || 'a little collection of moments');
   const cards = items.map((item, i) => `<figure class="gallery-card"><button class="gallery-open" data-index="${i}" aria-label="Open ${escapeHTML(item.caption || item.name)}"><img class="gallery-image" src="${escapeHTML(paths[i])}" alt="${escapeHTML(item.caption || item.name)}" loading="lazy"/></button>${settings.captions && item.caption ? `<figcaption>${escapeHTML(item.caption)}</figcaption>` : ''}</figure>`).join('');
   const background = /^#[a-f\d]{6}$/i.test(settings.background) ? settings.background : '#f6efdf';
   const template = ['grid', 'collage', 'scrapbook'].includes(settings.template) ? settings.template : 'grid';
